@@ -3,254 +3,280 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
-  <title>AI Agent</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>AI Trading Terminal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
       --bg-deep: #0a0a0a;
-      --bg-sidebar: #111111;
-      --bg-surface: #1a1a1a;
-      --bg-elevated: #222222;
-      --bg-user: #2a2a5a;
-      --bg-ai: #1e1e1e;
-      --bg-plan: rgba(99,102,241,0.06);
+      --bg-panel: #111111;
+      --bg-surface: #161616;
+      --bg-elevated: #1c1c1c;
+      --bg-hover: #222;
       --text-primary: #ececec;
-      --text-secondary: #b0b0b0;
-      --text-tertiary: #777;
+      --text-secondary: #999;
       --text-muted: #555;
+      --green: #00d26a;
+      --green-dim: rgba(0,210,106,0.12);
+      --red: #ff4757;
+      --red-dim: rgba(255,71,87,0.12);
       --accent: #6366f1;
       --accent-bright: #818cf8;
-      --green: #10b981;
-      --red: #ef4444;
-      --yellow: #eab308;
-      --blue: #38bdf8;
-      --border: rgba(255,255,255,0.08);
-      --border-subtle: rgba(255,255,255,0.04);
-      --font: 'Inter', system-ui, -apple-system, sans-serif;
-      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --yellow: #ffd32a;
+      --border: rgba(255,255,255,0.06);
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
     }
 
-    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+    html { font-size: 14px; -webkit-font-smoothing: antialiased; }
     body {
       font-family: var(--font);
       background: var(--bg-deep);
       color: var(--text-primary);
       height: 100vh; height: 100dvh;
       overflow: hidden;
-      display: flex;
     }
 
-    /* ===== SIDEBAR ===== */
-    .sidebar {
-      width: 260px; flex-shrink: 0;
-      background: var(--bg-sidebar);
-      border-right: 1px solid var(--border);
-      display: flex; flex-direction: column;
+    /* ===== LAYOUT ===== */
+    .app {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
       height: 100vh; height: 100dvh;
     }
-    .sidebar-header {
-      padding: 16px;
+
+    /* ===== COINS LIST ===== */
+    .coins-panel {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .coins-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
       display: flex; align-items: center; gap: 10px;
-      border-bottom: 1px solid var(--border-subtle);
     }
-    .sidebar-logo {
-      width: 28px; height: 28px;
-      background: var(--accent); border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px;
+    .coins-header h1 {
+      font-size: 15px; font-weight: 700;
+      background: linear-gradient(135deg, var(--green), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-    .sidebar-brand { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-
-    .new-chat-btn {
-      margin: 12px 12px 8px;
-      padding: 10px 14px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text-secondary);
-      font-family: var(--font); font-size: 13px; font-weight: 500;
-      cursor: pointer;
-      display: flex; align-items: center; gap: 8px;
-      transition: all 0.15s;
+    .coins-header .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
     }
-    .new-chat-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
-
-    .sidebar-section-label {
-      padding: 12px 16px 6px;
-      font-size: 10px; font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.6px;
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
-    .history-list {
-      flex: 1; overflow-y: auto; padding: 0 8px;
+    .coins-search {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
     }
-    .history-list::-webkit-scrollbar { width: 4px; }
-    .history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .coins-search input {
+      width: 100%; padding: 8px 12px;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text-primary);
+      font-family: var(--font); font-size: 12px; outline: none;
+    }
+    .coins-search input:focus { border-color: var(--accent); }
+    .coins-search input::placeholder { color: var(--text-muted); }
 
-    .history-item {
-      padding: 10px 12px; border-radius: 8px;
-      cursor: pointer; margin-bottom: 2px;
-      transition: all 0.1s;
+    .coins-list {
+      flex: 1; overflow-y: auto;
     }
-    .history-item:hover { background: rgba(255,255,255,0.04); }
-    .history-item.active { background: rgba(99,102,241,0.12); }
-    .history-title {
-      font-size: 13px; font-weight: 500;
-      color: var(--text-secondary);
+    .coins-list::-webkit-scrollbar { width: 4px; }
+    .coins-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+    .coin-item {
+      display: grid;
+      grid-template-columns: 24px 1fr auto auto;
+      align-items: center; gap: 10px;
+      padding: 10px 16px;
+      cursor: pointer; transition: background 0.1s;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+    }
+    .coin-item:hover { background: var(--bg-hover); }
+    .coin-item.active { background: rgba(99,102,241,0.08); border-left: 2px solid var(--accent); }
+
+    .coin-rank {
+      font-size: 10px; color: var(--text-muted);
+      font-family: var(--mono); text-align: center;
+    }
+    .coin-info { min-width: 0; }
+    .coin-name {
+      font-size: 13px; font-weight: 600;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .history-item.active .history-title { color: var(--text-primary); }
-    .history-meta {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 10px; color: var(--text-muted); margin-top: 4px;
+    .coin-symbol {
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; font-family: var(--mono);
     }
-    .history-badge {
-      font-size: 9px; font-weight: 600; padding: 1px 5px;
-      border-radius: 3px; text-transform: uppercase; letter-spacing: 0.3px;
+    .coin-price {
+      font-size: 12px; font-family: var(--mono);
+      font-weight: 500; text-align: right;
     }
-    .history-badge.chat { background: rgba(56,189,248,0.15); color: var(--blue); }
-    .history-badge.agent { background: rgba(99,102,241,0.15); color: var(--accent-bright); }
-    .history-empty {
-      padding: 24px 12px; text-align: center;
-      font-size: 12px; color: var(--text-muted);
+    .coin-change {
+      font-size: 11px; font-family: var(--mono);
+      font-weight: 600; text-align: right;
+      padding: 2px 6px; border-radius: 4px;
+      min-width: 56px;
+    }
+    .coin-change.positive { color: var(--green); background: var(--green-dim); }
+    .coin-change.negative { color: var(--red); background: var(--red-dim); }
+
+    .coins-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 10px; color: var(--text-muted);
+      text-align: center;
     }
 
-    .sidebar-footer {
-      padding: 12px 16px;
-      border-top: 1px solid var(--border-subtle);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .sidebar-user {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--text-secondary); font-weight: 500;
-    }
-    .sidebar-user-dot {
-      width: 24px; height: 24px; border-radius: 50%;
-      background: var(--accent);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 600; color: #fff;
-    }
-    .sidebar-footer-btns { display: flex; gap: 4px; }
-    .icon-btn {
-      background: none; border: none; color: var(--text-muted);
-      cursor: pointer; padding: 6px; border-radius: 6px;
-      font-size: 14px; transition: all 0.15s;
-    }
-    .icon-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
-
-    /* ===== MAIN ===== */
-    .chat-main {
-      flex: 1; display: flex; flex-direction: column;
-      min-width: 0; position: relative;
-    }
-
-    .chat-messages {
-      flex: 1; overflow-y: auto;
-      padding: 24px 0;
-    }
-    .chat-messages::-webkit-scrollbar { width: 6px; }
-    .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 6px; }
-
-    /* Welcome */
-    .welcome {
+    /* ===== MAIN CHART ===== */
+    .main-panel {
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      height: 100%; padding: 40px 20px; text-align: center;
-    }
-    .welcome-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.6; }
-    .welcome h2 {
-      font-size: 22px; font-weight: 600;
-      margin-bottom: 8px; color: var(--text-primary);
-    }
-    .welcome p {
-      font-size: 14px; color: var(--text-tertiary);
-      max-width: 380px; line-height: 1.5;
+      overflow: hidden;
     }
 
-    /* Messages */
-    .msg-row {
-      padding: 6px 0;
-      animation: msgIn 0.25s ease;
+    .chart-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 16px;
+      flex-wrap: wrap;
     }
-    @keyframes msgIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+    .chart-coin-info {
+      display: flex; align-items: center; gap: 12px;
     }
+    .chart-coin-img {
+      width: 32px; height: 32px; border-radius: 50%;
+    }
+    .chart-coin-name { font-size: 18px; font-weight: 700; }
+    .chart-coin-symbol { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
 
-    .msg-container {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-
-    .msg-user .msg-container {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
-
-    .msg-bubble {
-      padding: 12px 16px;
-      border-radius: 16px;
-      font-size: 14px;
-      line-height: 1.6;
-      word-break: break-word;
-      width: fit-content;
-      max-width: 100%;
-    }
-
-    .msg-user .msg-bubble {
-      background: var(--bg-user);
-      color: var(--text-primary);
-      border-bottom-right-radius: 4px;
-    }
-
-    .msg-ai .msg-bubble {
-      background: var(--bg-ai);
-      color: var(--text-primary);
-      border-bottom-left-radius: 4px;
-      border: 1px solid var(--border-subtle);
-      width: 100%;
-    }
-
-    .msg-label {
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.4px;
-      margin-bottom: 6px;
-    }
-    .msg-label.user-label { color: var(--accent-bright); }
-    .msg-label.ai-label { color: var(--green); }
-
-    /* Code blocks */
-    .msg-bubble pre {
-      background: var(--bg-deep);
-      padding: 10px 12px;
-      border-radius: 6px;
-      margin: 8px 0;
+    .chart-price-big {
+      font-size: 28px; font-weight: 700;
       font-family: var(--mono);
-      font-size: 12px;
-      line-height: 1.5;
-      overflow-x: auto;
+      margin-left: auto;
+    }
+    .chart-change-badge {
+      font-size: 14px; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px;
+      font-family: var(--mono);
+    }
+    .chart-change-badge.positive { color: var(--green); background: var(--green-dim); }
+    .chart-change-badge.negative { color: var(--red); background: var(--red-dim); }
+
+    .timeframe-tabs {
+      display: flex; gap: 4px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tf-tab {
+      padding: 10px 14px;
+      background: none; border: none;
+      color: var(--text-muted); font-family: var(--font);
+      font-size: 12px; font-weight: 600;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .tf-tab:hover { color: var(--text-secondary); }
+    .tf-tab.active { color: var(--accent-bright); border-bottom-color: var(--accent); }
+
+    .chart-area {
+      flex: 1; padding: 16px 20px;
+      min-height: 0; position: relative;
+    }
+    .chart-area canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .chart-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      padding: 0 20px 16px;
+    }
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-label {
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-size: 14px; font-weight: 600;
+      font-family: var(--mono);
+    }
+
+    /* ===== AI PANEL ===== */
+    .ai-panel {
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .ai-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ai-header h2 {
+      font-size: 14px; font-weight: 600;
+    }
+    .ai-header .ai-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .ai-content {
+      flex: 1; overflow-y: auto; padding: 16px;
+    }
+    .ai-content::-webkit-scrollbar { width: 4px; }
+    .ai-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+    .ai-analyze-btn {
+      display: block; width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border: none; border-radius: 10px;
+      color: #fff; font-family: var(--font);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      margin-bottom: 16px;
+    }
+    .ai-analyze-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+    .ai-analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .ai-result {
+      font-size: 12px; line-height: 1.6;
+      color: var(--text-secondary);
       white-space: pre-wrap;
     }
-    .msg-bubble code {
-      background: var(--bg-deep);
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-family: var(--mono);
-      font-size: 12px;
+    .ai-result strong { color: var(--text-primary); }
+    .ai-result .signal {
+      display: inline-block;
+      padding: 3px 8px; border-radius: 4px;
+      font-weight: 600; font-size: 11px;
     }
-    .msg-bubble pre code { background: none; padding: 0; }
+    .signal.buy { background: var(--green-dim); color: var(--green); }
+    .signal.sell { background: var(--red-dim); color: var(--red); }
+    .signal.hold { background: rgba(255,211,42,0.12); color: var(--yellow); }
 
-    /* Thinking */
-    .thinking-bubble {
-      display: flex; align-items: center; gap: 10px;
-      padding: 14px 16px;
+    .ai-thinking {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text-muted); font-size: 12px;
+      padding: 20px 0;
     }
-    .spinner {
+    .ai-spinner {
       width: 14px; height: 14px;
       border: 2px solid var(--border);
       border-top-color: var(--accent);
@@ -259,796 +285,520 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ===== AGENT RESULT ===== */
-    .agent-result { width: 100%; }
-    .agent-section {
-      margin-bottom: 16px;
+    .ai-chat-area {
+      border-top: 1px solid var(--border);
+      padding: 12px;
     }
-    .agent-section-title {
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.5px;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      display: flex; align-items: center; gap: 6px;
+    .ai-chat-input {
+      display: flex; gap: 8px;
     }
-    .agent-plan-list {
-      display: flex; flex-direction: column; gap: 4px;
+    .ai-chat-input input {
+      flex: 1; padding: 10px 12px;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text-primary);
+      font-family: var(--font); font-size: 12px; outline: none;
     }
-    .agent-plan-item {
-      display: flex; align-items: flex-start; gap: 8px;
-      padding: 6px 10px;
-      background: var(--bg-plan);
-      border-radius: 6px;
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-    .agent-plan-id {
-      width: 18px; height: 18px;
-      background: var(--accent);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 700; color: #fff;
-      flex-shrink: 0;
-    }
-    .agent-plan-type {
-      font-family: var(--mono);
-      font-size: 9px;
-      color: var(--text-muted);
-      background: rgba(255,255,255,0.04);
-      padding: 1px 5px;
-      border-radius: 3px;
-      margin-left: auto;
-      flex-shrink: 0;
-    }
-
-    .agent-result-item {
-      padding: 10px 12px;
-      background: var(--bg-deep);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      margin-bottom: 6px;
-    }
-    .agent-result-header {
-      display: flex; align-items: center; gap: 6px;
-      margin-bottom: 6px;
-    }
-    .agent-result-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--green);
-    }
-    .agent-result-dot.failed { background: var(--red); }
-    .agent-result-name {
-      font-size: 12px; font-weight: 600;
-      color: var(--text-secondary);
-    }
-    .agent-result-output {
-      font-size: 12px;
-      line-height: 1.5;
-      color: var(--text-tertiary);
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: var(--mono);
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .agent-result-output::-webkit-scrollbar { width: 4px; }
-    .agent-result-output::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-
-    .agent-summary {
-      padding: 10px 12px;
-      background: rgba(16,185,129,0.06);
-      border: 1px solid rgba(16,185,129,0.15);
-      border-radius: 8px;
-      font-size: 13px;
-      color: var(--text-secondary);
-      line-height: 1.5;
-    }
-
-    /* ===== MODE TOGGLE ===== */
-    .mode-toggle {
-      display: flex;
-      gap: 4px;
-      padding: 0 24px;
-      margin-bottom: 8px;
-      max-width: 720px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .mode-btn {
-      padding: 5px 12px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-muted);
-      font-family: var(--font);
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .mode-btn:hover { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
-    .mode-btn.active {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }
-
-    /* ===== INPUT BAR ===== */
-    .input-bar {
-      padding: 12px 24px 20px;
-      background: var(--bg-deep);
-      border-top: 1px solid var(--border-subtle);
-    }
-    .input-bar-inner { max-width: 720px; margin: 0 auto; }
-    .input-box {
-      display: flex; align-items: flex-end; gap: 8px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 8px 12px;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .input-box:focus-within {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(99,102,241,0.2), 0 4px 16px rgba(0,0,0,0.2);
-    }
-    .input-box textarea {
-      flex: 1;
-      background: transparent; border: none; outline: none;
-      resize: none;
-      font-family: var(--font); font-size: 14px;
-      color: var(--text-primary); line-height: 1.5;
-      max-height: 120px; min-height: 24px;
-      padding: 4px 0;
-    }
-    .input-box textarea::placeholder { color: var(--text-muted); }
-    .send-btn {
-      width: 34px; height: 34px;
-      background: var(--accent); border: none; border-radius: 10px;
-      color: #fff; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: all 0.15s; font-size: 16px;
-    }
-    .send-btn:hover:not(:disabled) { background: var(--accent-bright); transform: scale(1.05); }
-    .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .input-hint {
-      text-align: center; margin-top: 8px;
-      font-size: 10px; color: var(--text-muted);
-    }
-
-    /* ===== AUTH MODAL ===== */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,0.7);
-      display: none; align-items: center; justify-content: center;
-      backdrop-filter: blur(6px);
-    }
-    .modal-overlay.active { display: flex; }
-    .modal {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      width: 360px; max-width: 90vw;
-      padding: 28px;
-      animation: modalIn 0.2s ease;
-    }
-    @keyframes modalIn {
-      from { opacity: 0; transform: scale(0.96) translateY(8px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-    .modal p.sub { font-size: 13px; color: var(--text-tertiary); margin-bottom: 20px; }
-    .modal label {
-      display: block; font-size: 11px; font-weight: 600;
-      color: var(--text-muted); text-transform: uppercase;
-      letter-spacing: 0.5px; margin-bottom: 6px;
-    }
-    .modal input[type="text"],
-    .modal input[type="password"] {
-      width: 100%; background: var(--bg-deep); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 12px; color: var(--text-primary);
-      font-family: var(--font); font-size: 14px; outline: none;
-      margin-bottom: 14px; transition: border-color 0.15s;
-    }
-    .modal input:focus { border-color: var(--accent); }
-    .modal .error-msg { font-size: 12px; color: var(--red); margin-bottom: 10px; display: none; }
-    .modal .error-msg.active { display: block; }
-    .modal-actions { display: flex; gap: 8px; margin-top: 6px; }
-    .btn-accent {
-      background: var(--accent); border: none; color: #fff;
-      border-radius: 8px; padding: 10px 16px;
-      font-family: var(--font); font-size: 13px; font-weight: 500;
-      cursor: pointer; transition: all 0.15s; flex: 1;
-    }
-    .btn-accent:hover { background: var(--accent-bright); }
-    .btn-ghost {
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      color: var(--text-secondary); border-radius: 8px; padding: 10px 16px;
-      font-family: var(--font); font-size: 13px; font-weight: 500;
+    .ai-chat-input input:focus { border-color: var(--accent); }
+    .ai-chat-input input::placeholder { color: var(--text-muted); }
+    .ai-chat-send {
+      padding: 10px 14px;
+      background: var(--accent); border: none; border-radius: 8px;
+      color: #fff; font-size: 12px; font-weight: 600;
       cursor: pointer; transition: all 0.15s;
     }
-    .btn-ghost:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
-    .modal-switch {
-      text-align: center; margin-top: 14px;
-      font-size: 13px; color: var(--text-tertiary);
+    .ai-chat-send:hover { background: var(--accent-bright); }
+
+    /* Welcome state */
+    .ai-welcome {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-muted);
     }
-    .modal-switch a { color: var(--accent-bright); cursor: pointer; text-decoration: none; }
-    .modal-switch a:hover { text-decoration: underline; }
+    .ai-welcome-icon { font-size: 32px; margin-bottom: 12px; }
+    .ai-welcome h3 { font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; }
+    .ai-welcome p { font-size: 12px; line-height: 1.5; }
+
+    /* Loading state */
+    .loading-screen {
+      display: flex; align-items: center; justify-content: center;
+      height: 100vh; flex-direction: column; gap: 16px;
+    }
+    .loading-screen .spinner { width: 24px; height: 24px; }
+    .loading-screen p { color: var(--text-muted); font-size: 13px; }
 
     /* ===== MOBILE ===== */
-    .mobile-header {
+    .mobile-tabs {
       display: none;
-      position: fixed; top: 0; left: 0; right: 0; z-index: 80;
-      background: var(--bg-sidebar);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 8px 12px;
-      align-items: center; justify-content: space-between;
-      height: 44px;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      z-index: 100;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      padding: 8px 0;
+      padding-bottom: env(safe-area-inset-bottom, 8px);
     }
-    .mobile-header-left { display: flex; align-items: center; gap: 8px; }
-    .mobile-header-right { display: flex; align-items: center; gap: 6px; }
-    .mobile-user-info {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: var(--text-secondary); font-weight: 500;
+    .mobile-tabs-inner {
+      display: flex; justify-content: space-around;
     }
-    .mobile-user-dot {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: var(--accent);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 600; color: #fff;
+    .mobile-tab {
+      background: none; border: none;
+      color: var(--text-muted); font-size: 10px;
+      font-family: var(--font); font-weight: 600;
+      cursor: pointer; padding: 6px 12px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
     }
-    .sidebar-overlay {
-      display: none; position: fixed; inset: 0; z-index: 90;
-      background: rgba(0,0,0,0.5);
-    }
+    .mobile-tab.active { color: var(--accent-bright); }
+    .mobile-tab span { font-size: 16px; }
 
-    @media (max-width: 768px) {
-      .sidebar {
-        position: fixed; left: 0; top: 0; z-index: 100;
-        transform: translateX(-100%);
-        transition: transform 0.25s ease;
-        width: 280px; display: none;
+    @media (max-width: 1024px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr;
       }
-      .sidebar.open { transform: translateX(0); display: flex; }
-      .sidebar-overlay.open { display: block; }
-      .mobile-header { display: flex; }
-
-      .chat-main { height: 100vh; height: 100dvh; width: 100%; }
-      .chat-messages {
-        padding: 48px 0 8px;
-        -webkit-overflow-scrolling: touch;
+      .coins-panel, .ai-panel {
+        display: none;
+        position: fixed; inset: 0; z-index: 50;
       }
-      .msg-container { padding: 0 12px; }
-      .msg-bubble { font-size: 13px; padding: 10px 14px; }
-      .mode-toggle { padding: 0 12px; }
-
-      .welcome h2 { font-size: 18px; }
-      .welcome p { font-size: 13px; }
-      .welcome { padding: 24px 16px; }
-
-      .input-bar {
-        padding: 8px 12px;
-        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-      }
-      .input-bar-inner { max-width: 100%; }
-      .input-box { padding: 6px 10px; border-radius: 12px; }
-      .input-box textarea { font-size: 16px; }
-      .send-btn { width: 36px; height: 36px; border-radius: 8px; }
-      .input-hint { display: none; }
+      .coins-panel.mobile-show, .ai-panel.mobile-show { display: flex; }
+      .main-panel.mobile-show { display: flex; }
+      .mobile-tabs { display: block; }
+      .chart-header { padding: 12px 16px; }
+      .chart-area { padding: 12px 16px; }
+      .chart-stats { padding: 0 16px 12px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- MOBILE HEADER -->
-  <div class="mobile-header" id="mobileHeader">
-    <div class="mobile-header-left">
-      <button class="icon-btn" onclick="toggleSidebar()" style="font-size:18px;padding:4px 6px;">☰</button>
-      <span style="font-size:13px;font-weight:600;color:var(--text-primary);">AI Agent</span>
+<div class="app" id="app">
+  <!-- COINS LIST -->
+  <aside class="coins-panel" id="coinsPanel">
+    <div class="coins-header">
+      <div class="live-dot"></div>
+      <h1>AI Trading Terminal</h1>
     </div>
-    <div class="mobile-header-right" id="mobileAuthBtns">
-      <button class="icon-btn" onclick="showModal('login')" title="Log in">🔑</button>
-      <button class="icon-btn" onclick="showModal('signup')" title="Sign up">✏️</button>
+    <div class="coins-search">
+      <input type="text" id="searchInput" placeholder="Search coin..." oninput="filterCoins()" />
     </div>
-    <div class="mobile-header-right" id="mobileUserBtns" style="display:none;">
-      <div class="mobile-user-info">
-        <div class="mobile-user-dot" id="mobileUserDot">U</div>
-        <span id="mobileUserName">user</span>
-      </div>
-      <button class="icon-btn" onclick="logout()" title="Logout">🚪</button>
+    <div class="coins-list" id="coinsList">
+      <div class="loading-screen"><div class="ai-spinner"></div><p>Loading coins...</p></div>
     </div>
-  </div>
-
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-logo">🧠</div>
-      <span class="sidebar-brand">AI Agent</span>
-    </div>
-
-    <button class="new-chat-btn" onclick="newChat()">
-      <span>＋</span> New chat
-    </button>
-
-    <div class="sidebar-section-label">History</div>
-    <div class="history-list" id="historyList">
-      <div class="history-empty">No conversations yet</div>
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="sidebar-user" id="sidebarUser" style="display:none;">
-        <div class="sidebar-user-dot" id="userDot">U</div>
-        <span id="userName">user</span>
-      </div>
-      <div class="sidebar-footer-btns" id="authBtns">
-        <button class="icon-btn" onclick="showModal('login')" title="Log in">🔑</button>
-        <button class="icon-btn" onclick="showModal('signup')" title="Sign up">✏️</button>
-      </div>
-      <div class="sidebar-footer-btns" id="userBtns" style="display:none;">
-        <button class="icon-btn" onclick="logout()" title="Logout">🚪</button>
-      </div>
-    </div>
+    <div class="coins-footer">Data from CoinGecko · Auto-refresh 30s</div>
   </aside>
 
-  <!-- AUTH MODAL -->
-  <div class="modal-overlay" id="authModal">
-    <div class="modal">
-      <h2 id="modalTitle">Sign up</h2>
-      <p class="sub" id="modalSub">Create an account to save your history.</p>
-      <div class="error-msg" id="authError"></div>
-      <label>Username</label>
-      <input type="text" id="authUser" placeholder="e.g. garok" autocomplete="username" />
-      <label>Password</label>
-      <input type="password" id="authPass" placeholder="••••" autocomplete="current-password" />
-      <div class="modal-actions">
-        <button class="btn-accent" id="authSubmit" onclick="submitAuth()">Sign up</button>
-        <button class="btn-ghost" onclick="hideModal()">Cancel</button>
-      </div>
-      <div class="modal-switch" id="modalSwitch">
-        Already have an account? <a onclick="toggleAuthMode()">Log in</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- MAIN -->
-  <main class="chat-main">
-    <div class="chat-messages" id="chatMessages">
-      <div class="welcome" id="welcomeScreen">
-        <div class="welcome-icon">🧠</div>
-        <h2>What do you want to build?</h2>
-        <p>Describe your goal. I'll plan and execute it for you.</p>
+  <!-- MAIN CHART -->
+  <main class="main-panel" id="mainPanel">
+    <div id="chartWelcome" class="loading-screen">
+      <div class="ai-welcome">
+        <div class="ai-welcome-icon">📊</div>
+        <h3>Select a coin</h3>
+        <p>Choose a coin from the list to view chart and AI analysis</p>
       </div>
     </div>
 
-    <div class="input-bar">
-      <div class="input-bar-inner">
-        <div class="input-box">
-          <textarea id="msgInput" rows="1" placeholder="Describe your goal..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-          <button class="send-btn" id="sendBtn" onclick="send()">↑</button>
+    <div id="chartContent" style="display:none; flex-direction:column; height:100%;">
+      <div class="chart-header">
+        <div class="chart-coin-info">
+          <img class="chart-coin-img" id="coinImg" src="" />
+          <div>
+            <div class="chart-coin-name" id="coinTitle">Bitcoin</div>
+            <div class="chart-coin-symbol" id="coinSym">BTC</div>
+          </div>
         </div>
-        <div class="input-hint">Enter to send · Shift+Enter for new line</div>
+        <div class="chart-price-big" id="coinPrice">$0</div>
+        <div class="chart-change-badge" id="coinChange">0%</div>
       </div>
+
+      <div class="timeframe-tabs">
+        <button class="tf-tab" onclick="setTimeframe('1')">1D</button>
+        <button class="tf-tab active" onclick="setTimeframe('7')">7D</button>
+        <button class="tf-tab" onclick="setTimeframe('30')">30D</button>
+        <button class="tf-tab" onclick="setTimeframe('90')">90D</button>
+        <button class="tf-tab" onclick="setTimeframe('365')">1Y</button>
+      </div>
+
+      <div class="chart-area">
+        <canvas id="priceChart"></canvas>
+      </div>
+
+      <div class="chart-stats" id="chartStats"></div>
     </div>
   </main>
 
+  <!-- AI PANEL -->
+  <aside class="ai-panel" id="aiPanel">
+    <div class="ai-header">
+      <div class="ai-dot"></div>
+      <h2>AI Analysis</h2>
+    </div>
+    <div class="ai-content" id="aiContent">
+      <div class="ai-welcome">
+        <div class="ai-welcome-icon">🤖</div>
+        <h3>AI Trading Assistant</h3>
+        <p>Select a coin and click "Analyze" to get AI-powered trading insights</p>
+      </div>
+    </div>
+    <div class="ai-chat-area">
+      <div class="ai-chat-input">
+        <input type="text" id="chatInput" placeholder="Ask about any coin..." onkeydown="if(event.key==='Enter')sendChat()" />
+        <button class="ai-chat-send" onclick="sendChat()">Ask</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- MOBILE TABS -->
+<div class="mobile-tabs">
+  <div class="mobile-tabs-inner">
+    <button class="mobile-tab active" onclick="showMobilePanel('coins')" id="mtCoins">
+      <span>📋</span>Coins
+    </button>
+    <button class="mobile-tab" onclick="showMobilePanel('chart')" id="mtChart">
+      <span>📊</span>Chart
+    </button>
+    <button class="mobile-tab" onclick="showMobilePanel('ai')" id="mtAi">
+      <span>🤖</span>AI
+    </button>
+  </div>
+</div>
+
 <script>
 // ===== STATE =====
-let token = localStorage.getItem('chat_token') || null;
-let localUser = localStorage.getItem('chat_user') || null;
-let conversations = JSON.parse(localStorage.getItem('chat_conversations') || '[]');
-let authMode = 'signup';
-let isRunning = false;
-let currentConvId = null;
-let currentMessages = [];
-let mode = 'agent';
+let coins = [];
+let selectedCoin = null;
+let chart = null;
+let currentDays = '7';
 
 // ===== INIT =====
-init();
+loadCoins();
+setInterval(loadCoins, 30000);
 
-async function init() {
-  if (token) {
-    try {
-      const res = await fetch('/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      localUser = data.username;
-      localStorage.setItem('chat_user', localUser);
-      showLoggedIn();
-    } catch {
-      if (localUser) { showLoggedIn(); }
-      else { token = null; localStorage.removeItem('chat_token'); showLoggedOut(); }
-    }
-  } else if (localUser) { showLoggedIn(); }
-  else { showLoggedOut(); }
-  renderHistory();
-}
-
-function showLoggedIn() {
-  document.getElementById('sidebarUser').style.display = 'flex';
-  document.getElementById('userDot').textContent = localUser[0].toUpperCase();
-  document.getElementById('userName').textContent = localUser;
-  document.getElementById('authBtns').style.display = 'none';
-  document.getElementById('userBtns').style.display = 'flex';
-  const mDot = document.getElementById('mobileUserDot');
-  const mName = document.getElementById('mobileUserName');
-  if (mDot) mDot.textContent = localUser[0].toUpperCase();
-  if (mName) mName.textContent = localUser;
-  document.getElementById('mobileAuthBtns').style.display = 'none';
-  document.getElementById('mobileUserBtns').style.display = 'flex';
-}
-
-function showLoggedOut() {
-  document.getElementById('sidebarUser').style.display = 'none';
-  document.getElementById('authBtns').style.display = 'flex';
-  document.getElementById('userBtns').style.display = 'none';
-  document.getElementById('mobileAuthBtns').style.display = 'flex';
-  document.getElementById('mobileUserBtns').style.display = 'none';
-}
-
-// ===== AUTH =====
-function showModal(m) {
-  authMode = m;
-  document.getElementById('authModal').classList.add('active');
-  document.getElementById('authError').classList.remove('active');
-  document.getElementById('authUser').value = '';
-  document.getElementById('authPass').value = '';
-  if (m === 'signup') {
-    document.getElementById('modalTitle').textContent = 'Sign up';
-    document.getElementById('modalSub').textContent = 'Create an account to save your history.';
-    document.getElementById('authSubmit').textContent = 'Sign up';
-    document.getElementById('modalSwitch').innerHTML = 'Already have an account? <a onclick="toggleAuthMode()">Log in</a>';
-  } else {
-    document.getElementById('modalTitle').textContent = 'Log in';
-    document.getElementById('modalSub').textContent = 'Welcome back!';
-    document.getElementById('authSubmit').textContent = 'Log in';
-    document.getElementById('modalSwitch').innerHTML = "Don't have an account? <a onclick='toggleAuthMode()'>Sign up</a>";
-  }
-  setTimeout(() => document.getElementById('authUser').focus(), 100);
-}
-function hideModal() { document.getElementById('authModal').classList.remove('active'); }
-function toggleAuthMode() { showModal(authMode === 'signup' ? 'login' : 'signup'); }
-
-async function submitAuth() {
-  const user = document.getElementById('authUser').value.trim();
-  const pass = document.getElementById('authPass').value;
-  const errEl = document.getElementById('authError');
-  if (!user || !pass) { errEl.textContent = 'Fill in all fields'; errEl.classList.add('active'); return; }
-  document.getElementById('authSubmit').disabled = true;
+async function loadCoins() {
   try {
-    const res = await fetch('/auth/' + authMode, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user, password: pass })
-    });
-    const data = await res.json();
-    if (!res.ok) { errEl.textContent = data.error; errEl.classList.add('active'); return; }
-    token = data.token;
-    localUser = data.username;
-    localStorage.setItem('chat_token', token);
-    localStorage.setItem('chat_user', localUser);
-    hideModal(); showLoggedIn();
-  } catch { errEl.textContent = 'Network error'; errEl.classList.add('active'); }
-  finally { document.getElementById('authSubmit').disabled = false; }
-}
-
-function logout() {
-  token = null; localUser = null;
-  localStorage.removeItem('chat_token');
-  localStorage.removeItem('chat_user');
-  showLoggedOut(); newChat();
-}
-
-// ===== SIDEBAR =====
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('open');
-}
-
-function renderHistory() {
-  const list = document.getElementById('historyList');
-  if (conversations.length === 0) {
-    list.innerHTML = '<div class="history-empty">No conversations yet</div>';
-    return;
+    const res = await fetch('/api/coins');
+    if (!res.ok) throw new Error('Failed');
+    coins = await res.json();
+    renderCoinsList();
+  } catch (err) {
+    console.error('Failed to load coins:', err);
   }
-  list.innerHTML = conversations.map(c => {
-    const time = formatTime(c.createdAt);
-    const badge = '<span class="history-badge agent">Agent</span>';
-    return `
-    <div class="history-item ${c.id === currentConvId ? 'active' : ''}" onclick="loadConversation('${c.id}')">
-      <div class="history-title">${escHtml(c.title)}</div>
-      <div class="history-meta">${badge}<span>${time}</span></div>
+}
+
+function renderCoinsList() {
+  const list = document.getElementById('coinsList');
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = coins.filter(c =>
+    c.name.toLowerCase().includes(search) ||
+    c.symbol.toLowerCase().includes(search)
+  );
+
+  list.innerHTML = filtered.map(c => {
+    const change = c.price_change_percentage_24h || 0;
+    const changeClass = change >= 0 ? 'positive' : 'negative';
+    const price = formatPrice(c.current_price);
+    const active = selectedCoin?.id === c.id ? 'active' : '';
+
+    return `<div class="coin-item ${active}" onclick="selectCoin('${c.id}')">
+      <div class="coin-rank">${c.market_cap_rank}</div>
+      <div class="coin-info">
+        <div class="coin-name">${c.name}</div>
+        <div class="coin-symbol">${c.symbol}</div>
+      </div>
+      <div class="coin-price">${price}</div>
+      <div class="coin-change ${changeClass}">${change >= 0 ? '+' : ''}${change.toFixed(1)}%</div>
     </div>`;
   }).join('');
 }
 
-function formatTime(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const now = new Date();
-  const diff = now - d;
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
-  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
-  return d.toLocaleDateString();
+function filterCoins() { renderCoinsList(); }
+
+// ===== SELECT COIN =====
+async function selectCoin(id) {
+  const coin = coins.find(c => c.id === id);
+  if (!coin) return;
+  selectedCoin = coin;
+  renderCoinsList();
+
+  // Show chart
+  document.getElementById('chartWelcome').style.display = 'none';
+  const content = document.getElementById('chartContent');
+  content.style.display = 'flex';
+
+  // Update header
+  document.getElementById('coinImg').src = coin.image || '';
+  document.getElementById('coinTitle').textContent = coin.name;
+  document.getElementById('coinSym').textContent = coin.symbol?.toUpperCase();
+  document.getElementById('coinPrice').textContent = formatPrice(coin.current_price);
+
+  const change = coin.price_change_percentage_24h || 0;
+  const changeEl = document.getElementById('coinChange');
+  changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+  changeEl.className = `chart-change-badge ${change >= 0 ? 'positive' : 'negative'}`;
+
+  // Load chart data
+  await loadChart(id, currentDays);
+
+  // Load stats
+  await loadCoinDetails(id);
+
+  // Mobile: switch to chart
+  if (window.innerWidth <= 1024) showMobilePanel('chart');
 }
 
-function loadConversation(id) {
-  const conv = conversations.find(c => c.id === id);
-  if (!conv) return;
-  currentConvId = id;
-  currentMessages = [...conv.messages];
-  renderMessages();
-  renderHistory();
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('open');
-}
+async function loadChart(id, days) {
+  try {
+    const res = await fetch(`/api/coins/${id}?days=${days}`);
+    const data = await res.json();
 
-function renderMessages() {
-  const chat = document.getElementById('chatMessages');
-  const welcome = document.getElementById('welcomeScreen');
-  if (welcome) welcome.style.display = currentMessages.length > 0 ? 'none' : '';
-  chat.querySelectorAll('.msg-row').forEach(el => el.remove());
-  for (const msg of currentMessages) {
-    if (msg.role === 'user') addUserBubble(msg.content);
-    else if (msg.agentResult) addAgentResultBubble(msg.agentResult);
-    else addAIBubble(renderContent(msg.content));
+    const prices = data.chart || [];
+    const labels = prices.map(p => {
+      const d = new Date(p[0]);
+      if (days <= 1) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (days <= 7) return d.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    });
+    const values = prices.map(p => p[1]);
+
+    const isPositive = values[values.length - 1] >= values[0];
+    const lineColor = isPositive ? '#00d26a' : '#ff4757';
+    const fillColor = isPositive ? 'rgba(0,210,106,0.08)' : 'rgba(255,71,87,0.08)';
+
+    if (chart) chart.destroy();
+
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          borderColor: lineColor,
+          backgroundColor: fillColor,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          pointHitRadius: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1c1c1c',
+            titleColor: '#999',
+            bodyColor: '#ececec',
+            bodyFont: { family: 'JetBrains Mono', size: 12 },
+            borderColor: 'rgba(255,255,255,0.06)',
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: ctx => '$' + ctx.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.03)' },
+            ticks: { color: '#555', maxTicksLimit: 8, font: { size: 10 } }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.03)' },
+            ticks: {
+              color: '#555', font: { family: 'JetBrains Mono', size: 10 },
+              callback: v => '$' + v.toLocaleString()
+            }
+          }
+        }
+      }
+    });
+
+    // Update stats with fresh data
+    if (data.current_price) {
+      document.getElementById('coinPrice').textContent = formatPrice(data.current_price);
+      const ch = data.price_change_percentage_24h || 0;
+      const chEl = document.getElementById('coinChange');
+      chEl.textContent = `${ch >= 0 ? '+' : ''}${ch.toFixed(2)}%`;
+      chEl.className = `chart-change-badge ${ch >= 0 ? 'positive' : 'negative'}`;
+    }
+
+  } catch (err) {
+    console.error('Chart load error:', err);
   }
 }
 
-function newChat() {
-  currentConvId = null;
-  currentMessages = [];
-  const chat = document.getElementById('chatMessages');
-  chat.querySelectorAll('.msg-row').forEach(el => el.remove());
-  const welcome = document.getElementById('welcomeScreen');
-  if (welcome) welcome.style.display = '';
-  document.getElementById('msgInput').value = '';
-  renderHistory();
-  document.getElementById('msgInput').focus();
-}
+async function loadCoinDetails(id) {
+  try {
+    const res = await fetch(`/api/coins/${id}`);
+    const data = await res.json();
 
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
-
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    if (!isRunning) send();
-  }
-}
-
-// ===== BUBBLES =====
-function addUserBubble(text) {
-  const chat = document.getElementById('chatMessages');
-  const welcome = document.getElementById('welcomeScreen');
-  if (welcome) welcome.style.display = 'none';
-  const row = document.createElement('div');
-  row.className = 'msg-row msg-user';
-  row.innerHTML = `<div class="msg-container">
-    <div class="msg-label user-label">You</div>
-    <div class="msg-bubble">${escHtml(text)}</div>
-  </div>`;
-  chat.appendChild(row);
-  scrollToBottom();
-}
-
-function addAIBubble(html) {
-  const chat = document.getElementById('chatMessages');
-  const row = document.createElement('div');
-  row.className = 'msg-row msg-ai';
-  row.innerHTML = `<div class="msg-container">
-    <div class="msg-label ai-label">🤖 Assistant</div>
-    <div class="msg-bubble">${html}</div>
-  </div>`;
-  chat.appendChild(row);
-  scrollToBottom();
-}
-
-function addAgentResultBubble(data) {
-  const chat = document.getElementById('chatMessages');
-  const row = document.createElement('div');
-  row.className = 'msg-row msg-ai';
-
-  // Build plan HTML
-  let planHtml = '';
-  if (data.plan && data.plan.length) {
-    planHtml = `<div class="agent-section">
-      <div class="agent-section-title">📋 Plan</div>
-      <div class="agent-plan-list">
-        ${data.plan.map(t => `
-          <div class="agent-plan-item">
-            <div class="agent-plan-id">${t.id}</div>
-            <span>${escHtml(t.task)}</span>
-            <span class="agent-plan-type">${escHtml(t.type || '')}</span>
-          </div>
-        `).join('')}
+    const stats = document.getElementById('chartStats');
+    stats.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Market Cap</div>
+        <div class="stat-value">${formatLargeNumber(data.market_cap)}</div>
       </div>
-    </div>`;
-  }
-
-  // Build results HTML
-  let resultsHtml = '';
-  if (data.results && data.results.length) {
-    resultsHtml = `<div class="agent-section">
-      <div class="agent-section-title">⚡ Results</div>
-      ${data.results.map(r => `
-        <div class="agent-result-item">
-          <div class="agent-result-header">
-            <div class="agent-result-dot ${r.status === 'failed' ? 'failed' : ''}"></div>
-            <span class="agent-result-name">Task #${r.id}: ${escHtml(r.task || '')}</span>
-          </div>
-          <div class="agent-result-output">${renderContent(r.output || 'No output')}</div>
-        </div>
-      `).join('')}
-    </div>`;
-  }
-
-  // Build summary HTML
-  let summaryHtml = '';
-  if (data.summary) {
-    summaryHtml = `<div class="agent-section">
-      <div class="agent-section-title">📝 Summary</div>
-      <div class="agent-summary">${escHtml(data.summary)}</div>
-    </div>`;
-  }
-
-  row.innerHTML = `<div class="msg-container">
-    <div class="msg-label ai-label">🧠 Agent</div>
-    <div class="msg-bubble">
-      <div class="agent-result">
-        ${planHtml}
-        ${resultsHtml}
-        ${summaryHtml}
+      <div class="stat-card">
+        <div class="stat-label">24h Volume</div>
+        <div class="stat-value">${formatLargeNumber(data.total_volume)}</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-label">24h High</div>
+        <div class="stat-value" style="color:var(--green)">${formatPrice(data.high_24h)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">24h Low</div>
+        <div class="stat-value" style="color:var(--red)">${formatPrice(data.low_24h)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ATH</div>
+        <div class="stat-value">${formatPrice(data.ath)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Circulating</div>
+        <div class="stat-value">${formatLargeNumber(data.circulating_supply)}</div>
+      </div>
+    `;
+  } catch (err) {
+    console.error('Details load error:', err);
+  }
+}
+
+function setTimeframe(days) {
+  currentDays = days;
+  document.querySelectorAll('.tf-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  if (selectedCoin) loadChart(selectedCoin.id, days);
+}
+
+// ===== AI ANALYSIS =====
+async function analyzeCurrentCoin() {
+  if (!selectedCoin) return;
+
+  const btn = document.getElementById('analyzeBtn');
+  if (btn) btn.disabled = true;
+
+  const content = document.getElementById('aiContent');
+  content.innerHTML = `<div class="ai-thinking"><div class="ai-spinner"></div>Analyzing ${selectedCoin.name}...</div>`;
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        coin: selectedCoin.name,
+        price: selectedCoin.current_price,
+        change24h: selectedCoin.price_change_percentage_24h?.toFixed(2),
+        change7d: selectedCoin.price_change_percentage_7d?.toFixed(2),
+        marketCap: selectedCoin.market_cap,
+        volume: selectedCoin.total_volume,
+        high24h: selectedCoin.high_24h,
+        low24h: selectedCoin.low_24h
+      })
+    });
+
+    const data = await res.json();
+    content.innerHTML = `
+      <button class="ai-analyze-btn" id="analyzeBtn" onclick="analyzeCurrentCoin()">🔄 Re-analyze ${selectedCoin.name}</button>
+      <div class="ai-result">${formatAnalysis(data.analysis)}</div>
+    `;
+  } catch (err) {
+    content.innerHTML = `
+      <button class="ai-analyze-btn" id="analyzeBtn" onclick="analyzeCurrentCoin()">🔄 Try Again</button>
+      <div class="ai-result" style="color:var(--red)">Error: ${err.message}</div>
+    `;
+  }
+
+  if (btn) btn.disabled = false;
+}
+
+// Auto-analyze when coin selected
+const origSelectCoin = selectCoin;
+selectCoin = async function(id) {
+  await origSelectCoin(id);
+  const content = document.getElementById('aiContent');
+  content.innerHTML = `
+    <button class="ai-analyze-btn" id="analyzeBtn" onclick="analyzeCurrentCoin()">🤖 Analyze ${selectedCoin.name}</button>
+    <div class="ai-welcome">
+      <div class="ai-welcome-icon">📊</div>
+      <h3>${selectedCoin.name}</h3>
+      <p>Click "Analyze" to get AI-powered trading insights for ${selectedCoin.name}</p>
     </div>
-  </div>`;
-  chat.appendChild(row);
-  scrollToBottom();
+  `;
+};
+
+// ===== CHAT =====
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const content = document.getElementById('aiContent');
+  const userMsg = `<div style="margin-bottom:12px;padding:8px 10px;background:var(--bg-elevated);border-radius:8px;font-size:12px;color:var(--text-primary);"><strong>You:</strong> ${escHtml(text)}</div>`;
+  content.innerHTML = userMsg + content.innerHTML;
+  content.innerHTML = `<div class="ai-thinking"><div class="ai-spinner"></div>Thinking...</div>` + content.innerHTML;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: text }] })
+    });
+    const data = await res.json();
+
+    // Remove thinking
+    const thinking = content.querySelector('.ai-thinking');
+    if (thinking) thinking.remove();
+
+    const aiMsg = `<div style="margin-bottom:12px;padding:8px 10px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-secondary);line-height:1.6;"><strong style="color:var(--accent-bright)">AI:</strong> ${formatAnalysis(data.content)}</div>`;
+    content.innerHTML = aiMsg + userMsg + content.innerHTML;
+  } catch (err) {
+    const thinking = content.querySelector('.ai-thinking');
+    if (thinking) thinking.remove();
+    content.innerHTML = `<div style="color:var(--red);font-size:12px;margin-bottom:12px;">Error: ${err.message}</div>` + content.innerHTML;
+  }
 }
 
-function addThinking(label) {
-  const chat = document.getElementById('chatMessages');
-  const row = document.createElement('div');
-  row.className = 'msg-row msg-ai';
-  row.id = 'thinkingRow';
-  row.innerHTML = `<div class="msg-container">
-    <div class="msg-label ai-label">${label || '🤖 Assistant'}</div>
-    <div class="msg-bubble thinking-bubble">
-      <div class="spinner"></div>
-      <span style="font-size:13px;color:var(--text-tertiary);">Thinking...</span>
-    </div>
-  </div>`;
-  chat.appendChild(row);
-  scrollToBottom();
-  return row;
+// ===== MOBILE =====
+function showMobilePanel(panel) {
+  document.getElementById('coinsPanel').classList.toggle('mobile-show', panel === 'coins');
+  document.getElementById('mainPanel').classList.toggle('mobile-show', panel === 'chart');
+  document.getElementById('aiPanel').classList.toggle('mobile-show', panel === 'ai');
+  document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(panel === 'coins' ? 'mtCoins' : panel === 'chart' ? 'mtChart' : 'mtAi').classList.add('active');
 }
 
-function scrollToBottom() {
-  const chat = document.getElementById('chatMessages');
-  requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
+// ===== HELPERS =====
+function formatPrice(n) {
+  if (!n) return '$0';
+  if (n >= 1) return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (n >= 0.01) return '$' + n.toFixed(4);
+  return '$' + n.toFixed(8);
 }
 
-// ===== RENDER =====
-function renderContent(text) {
+function formatLargeNumber(n) {
+  if (!n) return '—';
+  if (n >= 1e12) return '$' + (n/1e12).toFixed(2) + 'T';
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toLocaleString();
+}
+
+function formatAnalysis(text) {
+  if (!text) return '';
   let html = escHtml(text);
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  // Bold headers
+  html = html.replace(/^(\d+\.\s.*$)/gm, '<strong>$1</strong>');
+  // Buy/Sell signals
+  html = html.replace(/(Strong Buy|Buy)/g, '<span class="signal buy">$1</span>');
+  html = html.replace(/(Strong Sell|Sell)/g, '<span class="signal sell">$1</span>');
+  html = html.replace(/(Hold)/g, '<span class="signal hold">$1</span>');
   html = html.replace(/\n/g, '<br>');
   return html;
-}
-
-// ===== SEND =====
-async function send() {
-  const input = document.getElementById('msgInput');
-  const text = input.value.trim();
-  if (!text || isRunning) return;
-
-  isRunning = true;
-  document.getElementById('sendBtn').disabled = true;
-  input.value = '';
-  input.style.height = 'auto';
-
-  addUserBubble(text);
-  currentMessages.push({ role: 'user', content: text });
-  await runAgent(text);
-}
-
-// ===== CHAT MODE =====
-async function runChat(text) {
-  const thinkingRow = addThinking('🤖 Assistant');
-
-  try {
-    const res = await fetch('/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: currentMessages })
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `Server error (${res.status})`);
-    }
-
-    const data = await res.json();
-    const content = data.content || 'No response.';
-
-    if (thinkingRow) thinkingRow.remove();
-    currentMessages.push({ role: 'assistant', content });
-    addAIBubble(renderContent(content));
-    saveConversation(text, 'chat');
-
-  } catch (err) {
-    if (thinkingRow) thinkingRow.remove();
-    addAIBubble(`<span style="color:var(--red);">⚠ ${escHtml(err.message)}</span>`);
-  } finally {
-    done();
-  }
-}
-
-// ===== AGENT MODE =====
-async function runAgent(text) {
-  const thinkingRow = addThinking('🧠 Agent');
-
-  try {
-    const res = await fetch('/run', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal: text })
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `Server error (${res.status})`);
-    }
-
-    const data = await res.json();
-
-    if (thinkingRow) thinkingRow.remove();
-
-    // Store agent result as message
-    currentMessages.push({ role: 'assistant', content: data.summary || 'Done', agentResult: data });
-    addAgentResultBubble(data);
-    saveConversation(text, 'agent');
-
-  } catch (err) {
-    if (thinkingRow) thinkingRow.remove();
-    addAIBubble(`<span style="color:var(--red);">⚠ ${escHtml(err.message)}</span>`);
-  } finally {
-    done();
-  }
-}
-
-function done() {
-  isRunning = false;
-  document.getElementById('sendBtn').disabled = false;
-  document.getElementById('msgInput').focus();
-}
-
-// ===== SAVE =====
-function saveConversation(firstMsg, convMode) {
-  if (!currentConvId) {
-    currentConvId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    conversations.unshift({
-      id: currentConvId,
-      title: firstMsg.substring(0, 50),
-      mode: convMode,
-      messages: currentMessages,
-      createdAt: new Date().toISOString()
-    });
-  } else {
-    const conv = conversations.find(c => c.id === currentConvId);
-    if (conv) { conv.messages = [...currentMessages]; }
-  }
-  if (conversations.length > 50) conversations = conversations.slice(0, 50);
-  localStorage.setItem('chat_conversations', JSON.stringify(conversations));
-  renderHistory();
 }
 
 function escHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
