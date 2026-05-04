@@ -610,12 +610,14 @@ function removeHolding(i) {
 }
 
 // ===== SIGNALS =====
+let memeHistory = JSON.parse(localStorage.getItem('ct_meme_signals') || '[]');
+
 function renderSignals() {
   const p = document.getElementById('page-signals');
 
   const historyHtml = signalHistory.slice(0, 5).map(s => `
     <div style="margin-bottom:16px">
-      <div style="font-size:11px;color:var(--t4);margin-bottom:8px">${new Date(s.time).toLocaleString()}</div>
+      <div style="font-size:11px;color:var(--t4);margin-bottom:8px">🕐 ${new Date(s.time).toLocaleString()}</div>
       ${s.signals.map(sig => `
         <div class="signal-card">
           <div class="signal-card-header">
@@ -632,19 +634,107 @@ function renderSignals() {
     </div>
   `).join('');
 
+  const memeHistoryHtml = memeHistory.slice(0, 5).map(s => `
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;color:var(--t4);margin-bottom:8px">🐸 ${new Date(s.time).toLocaleString()}</div>
+      ${s.signals.map(sig => renderMemeSignalCard(sig, s.coins)).join('')}
+    </div>
+  `).join('');
+
   p.innerHTML = `
-    <div class="ai-box" style="text-align:center;padding:24px">
-      <h3 style="justify-content:center">🎯 AI Market Scanner</h3>
-      <p style="color:var(--t3);font-size:12px;margin-bottom:16px">Scan the market for the best trading opportunities using AI analysis</p>
-      <button class="ai-btn" id="scanBtn" onclick="scanMarket()" style="max-width:300px;margin:0 auto">🔍 Scan Market Now</button>
-      <div id="scanResult"></div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="ai-btn" id="tab-market" onclick="switchSignalTab('market')" style="flex:1;max-width:none;font-size:13px;background:var(--ab);color:#fff;">📊 Market</button>
+      <button class="ai-btn" id="tab-meme" onclick="switchSignalTab('meme')" style="flex:1;max-width:none;font-size:13px;background:var(--bg3);color:var(--t2);border:1px solid var(--b);">🐸 Memecoins</button>
     </div>
 
-    <div class="section">
-      <div class="section-header"><div class="section-title">📜 Scan History</div></div>
-      ${signalHistory.length ? historyHtml : '<div style="text-align:center;padding:40px;color:var(--t4)">No scans yet. Click "Scan Market" above.</div>'}
+    <div id="signal-tab-market">
+      <div class="ai-box" style="text-align:center;padding:24px">
+        <h3 style="justify-content:center">🎯 AI Market Scanner</h3>
+        <p style="color:var(--t3);font-size:12px;margin-bottom:16px">Top 10 CEX coins by market cap</p>
+        <button class="ai-btn" id="scanBtn" onclick="scanMarket()" style="max-width:300px;margin:0 auto">🔍 Scan Market Now</button>
+        <div id="scanResult"></div>
+      </div>
+      <div class="section" style="margin-top:16px">
+        <div class="section-header"><div class="section-title">📜 Market Scan History</div></div>
+        ${signalHistory.length ? historyHtml : '<div style="text-align:center;padding:40px;color:var(--t4)">No scans yet.</div>'}
+      </div>
+    </div>
+
+    <div id="signal-tab-meme" style="display:none">
+      <div class="ai-box" style="text-align:center;padding:24px">
+        <h3 style="justify-content:center">🐸 Meme Coin Scanner</h3>
+        <p style="color:var(--t3);font-size:12px;margin-bottom:16px">Solana DEX trending meme coins via DexScreener</p>
+        <button class="ai-btn" id="memeBtn" onclick="scanMemeCoins()" style="max-width:300px;margin:0 auto;background:linear-gradient(135deg,#f97316,#ec4899);color:#fff">🚀 Scan Memecoins Now</button>
+        <div id="memeResult"></div>
+      </div>
+      <div class="section" style="margin-top:16px">
+        <div class="section-header"><div class="section-title">🐸 Meme Scan History</div></div>
+        ${memeHistory.length ? memeHistoryHtml : '<div style="text-align:center;padding:40px;color:var(--t4)">No meme scans yet.</div>'}
+      </div>
     </div>
   `;
+}
+
+function switchSignalTab(tab) {
+  document.getElementById('signal-tab-market').style.display = tab === 'market' ? 'block' : 'none';
+  document.getElementById('signal-tab-meme').style.display = tab === 'meme' ? 'block' : 'none';
+  document.getElementById('tab-market').style.background = tab === 'market' ? 'var(--ab)' : 'var(--bg3)';
+  document.getElementById('tab-market').style.color = tab === 'market' ? '#fff' : 'var(--t2)';
+  document.getElementById('tab-market').style.border = tab === 'market' ? 'none' : '1px solid var(--b)';
+  document.getElementById('tab-meme').style.background = tab === 'meme' ? 'linear-gradient(135deg,#f97316,#ec4899)' : 'var(--bg3)';
+  document.getElementById('tab-meme').style.color = tab === 'meme' ? '#fff' : 'var(--t2)';
+  document.getElementById('tab-meme').style.border = tab === 'meme' ? 'none' : '1px solid var(--b)';
+}
+
+function renderMemeSignalCard(sig, coins) {
+  const isBuy = sig.signal === 'Buy' || sig.signal === 'Strong Buy';
+  const isSell = sig.signal === 'Sell' || sig.signal === 'Strong Sell';
+  const isRisky = sig.signal === 'Risky';
+  const sigColor = isBuy ? 'var(--g)' : isSell ? 'var(--r)' : isRisky ? '#f97316' : 'var(--y)';
+  const sigBg = isBuy ? 'var(--gd)' : isSell ? 'var(--rd)' : isRisky ? 'rgba(249,115,22,0.15)' : 'var(--yd)';
+  const sigIcon = isBuy ? '🚀' : isSell ? '📉' : isRisky ? '⚠️' : '🟡';
+  const confColor = sig.confidence === 'High' ? 'var(--g)' : sig.confidence === 'Low' ? 'var(--r)' : 'var(--y)';
+
+  // Find matching coin data for extra info
+  const coinData = coins?.find(c => c.symbol?.toLowerCase() === sig.coin?.toLowerCase());
+  const liqText = coinData ? `$${(coinData.liquidity/1000).toFixed(0)}k` : '—';
+  const volText = coinData ? `$${(coinData.volume24h/1000).toFixed(0)}k` : '—';
+
+  return `
+    <div class="signal-card" style="margin-bottom:10px;background:var(--bg3);border:1px solid var(--b);border-radius:12px;padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px">${sigIcon}</span>
+          <div>
+            <span style="font-size:15px;font-weight:700">${esc(sig.coin)}</span>
+            ${coinData ? `<span style="font-size:11px;color:var(--t4);margin-left:6px">$${esc(coinData.price)}</span>` : ''}
+          </div>
+        </div>
+        <span style="background:${sigBg};color:${sigColor};padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700;font-family:var(--m)">${esc(sig.signal)}</span>
+      </div>
+      ${coinData ? `
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+          <span style="background:var(--bg);padding:3px 8px;border-radius:4px;font-size:10px;color:var(--t3);font-family:var(--m)">5m: ${coinData.change5m > 0 ? '+' : ''}${coinData.change5m}%</span>
+          <span style="background:var(--bg);padding:3px 8px;border-radius:4px;font-size:10px;color:var(--t3);font-family:var(--m)">1h: ${coinData.change1h > 0 ? '+' : ''}${coinData.change1h}%</span>
+          <span style="background:var(--bg);padding:3px 8px;border-radius:4px;font-size:10px;color:var(--t3);font-family:var(--m)">24h: ${coinData.change24h > 0 ? '+' : ''}${coinData.change24h}%</span>
+        </div>
+      ` : ''}
+      <div style="font-size:12px;color:var(--t2);line-height:1.5;margin-bottom:8px;">${esc(sig.reason)}</div>
+      <div style="display:flex;gap:8px;font-size:11px;">
+        <div style="background:var(--bg);padding:5px 8px;border-radius:6px;flex:1;text-align:center;">
+          <div style="color:var(--t4);margin-bottom:1px;">Confidence</div>
+          <div style="color:${confColor};font-weight:600;font-family:var(--m)">${esc(sig.confidence)}</div>
+        </div>
+        <div style="background:var(--bg);padding:5px 8px;border-radius:6px;flex:1;text-align:center;">
+          <div style="color:var(--t4);margin-bottom:1px;">Liquidity</div>
+          <div style="color:var(--ab);font-weight:600;font-family:var(--m)">${liqText}</div>
+        </div>
+        <div style="background:var(--bg);padding:5px 8px;border-radius:6px;flex:1;text-align:center;">
+          <div style="color:var(--t4);margin-bottom:1px;">Vol 24h</div>
+          <div style="color:var(--ab);font-weight:600;font-family:var(--m)">${volText}</div>
+        </div>
+      </div>
+    </div>`;
 }
 
 async function scanMarket() {
@@ -712,6 +802,42 @@ async function scanMarket() {
     res.innerHTML = '<div style="color:var(--r);padding:12px">Error: ' + e.message + '</div>';
   }
   btn.disabled = false; btn.textContent = '🔍 Scan Market Now';
+}
+
+async function scanMemeCoins() {
+  const btn = document.getElementById('memeBtn');
+  const res = document.getElementById('memeResult');
+  btn.disabled = true; btn.textContent = '🔍 Scanning DEX...';
+  res.innerHTML = '<div class="loading" style="padding:20px"><div class="spinner"></div>Fetching trending meme coins from DexScreener...</div>';
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 65000);
+
+    const r = await fetch('/api/meme-signals', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({}),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    const data = await r.json();
+
+    // Save to meme history
+    memeHistory.unshift({ time: new Date().toISOString(), signals: data.signals || [], coins: data.memeCoins || [] });
+    if (memeHistory.length > 20) memeHistory = memeHistory.slice(0, 20);
+    localStorage.setItem('ct_meme_signals', JSON.stringify(memeHistory));
+
+    if (!data.signals || data.signals.length === 0) {
+      res.innerHTML = '<div style="color:var(--t3);padding:20px;text-align:center">No trending meme coins found. Try again later.</div>';
+    } else {
+      res.innerHTML = data.signals.map(sig => renderMemeSignalCard(sig, data.memeCoins)).join('');
+    }
+
+    renderSignals();
+  } catch(e) {
+    res.innerHTML = '<div style="color:var(--r);padding:12px">Error: ' + e.message + '</div>';
+  }
+  btn.disabled = false; btn.textContent = '🚀 Scan Memecoins Now';
 }
 
 // ===== HASH ROUTING =====

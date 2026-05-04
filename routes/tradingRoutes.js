@@ -194,6 +194,108 @@ Be specific with numbers. Use the price data provided to calculate levels.`;
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
+  // ===== MEME COIN SIGNALS (DexScreener) =====
+  router.post('/api/meme-signals', async (req, res) => {
+    try {
+      // Fetch trending tokens from DexScreener
+      const dexRes = await fetch('https://api.dexscreener.com/token-boosts/top/v1', {
+        headers: { 'Accept': 'application/json' }
+      });
+      let trending = [];
+      if (dexRes.ok) {
+        const boostData = await dexRes.json();
+        // Get top 10 boosted tokens
+        const tokenAddresses = (boostData || []).slice(0, 10).map(t => t.tokenAddress);
+        
+        // Fetch details for each
+        for (const addr of tokenAddresses.slice(0, 6)) {
+          try {
+            const detailRes = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${addr}`);
+            if (detailRes.ok) {
+              const detail = await detailRes.json();
+              const pair = Array.isArray(detail) ? detail[0] : detail;
+              if (pair && pair.priceChange) {
+                trending.push({
+                  name: pair.baseToken?.name || 'Unknown',
+                  symbol: pair.baseToken?.symbol || '???',
+                  price: pair.priceUsd || '0',
+                  change5m: pair.priceChange?.m5 || 0,
+                  change1h: pair.priceChange?.h1 || 0,
+                  change6h: pair.priceChange?.h6 || 0,
+                  change24h: pair.priceChange?.h24 || 0,
+                  volume24h: pair.volume?.h24 || 0,
+                  liquidity: pair.liquidity?.usd || 0,
+                  fdv: pair.fdv || 0,
+                  dex: pair.dexId || 'unknown',
+                  pairAddress: pair.pairAddress || '',
+                  chainId: pair.chainId || 'solana'
+                });
+              }
+            }
+          } catch {}
+        }
+      }
+
+      // If DexScreener boost API fails, fallback to search trending
+      if (trending.length === 0) {
+        const searchRes = await fetch('https://api.dexscreener.com/latest/dex/search?q=solana%20meme');
+        if (searchRes.ok) {
+          const data = await searchRes.json();
+          trending = (data.pairs || []).slice(0, 8).map(p => ({
+            name: p.baseToken?.name || 'Unknown',
+            symbol: p.baseToken?.symbol || '???',
+            price: p.priceUsd || '0',
+            change5m: p.priceChange?.m5 || 0,
+            change1h: p.priceChange?.h1 || 0,
+            change6h: p.priceChange?.h6 || 0,
+            change24h: p.priceChange?.h24 || 0,
+            volume24h: p.volume?.h24 || 0,
+            liquidity: p.liquidity?.usd || 0,
+            fdv: p.fdv || 0,
+            dex: p.dexId || 'unknown',
+            pairAddress: p.pairAddress || '',
+            chainId: p.chainId || 'solana'
+          }));
+        }
+      }
+
+      if (trending.length === 0) {
+        return res.json({ signals: [], memeCoins: [] });
+      }
+
+      // Format for AI
+      const summary = trending.map(c =>
+        `${c.symbol} (${c.name}): $${c.price} | 5m: ${c.change5m}% | 1h: ${c.change1h}% | 6h: ${c.change6h}% | 24h: ${c.change24h}% | Vol24h: $${(c.volume24h/1000).toFixed(0)}k | Liq: $${(c.liquidity/1000).toFixed(0)}k | FDV: $${(c.fdv/1000000).toFixed(1)}M`
+      ).join('\n');
+
+      const systemPrompt = `You are a meme coin trading analyst on Solana DEX. Given trending meme coin data from DexScreener, output a JSON array of trading signals. Consider volume spikes, price momentum, liquidity safety, and FDV.
+
+Rules:
+- If liquidity < $50k, mark as "Risky" with low confidence
+- If volume24h is very high relative to FDV, it's a momentum play
+- Strong 5m/1h changes = short-term momentum
+- Be cautious with low liquidity coins
+
+Format: [{"coin":"SYMBOL","signal":"Buy/Sell/Hold/Risky","reason":"brief reason (1-2 sentences)","confidence":"High/Medium/Low","target":"$price or N/A"}]
+
+Output ONLY the JSON array.`;
+
+      const result = await callMiMo(mimoClient, [
+        { role: 'user', content: systemPrompt + '\n\nTrending Meme Coins:\n' + summary }
+      ], 2048);
+
+      let signals;
+      try {
+        const jsonStr = result.trim().startsWith('[') ? result.trim() : result.match(/\[[\s\S]*\]/)?.[0] || '[]';
+        signals = JSON.parse(jsonStr);
+      } catch {
+        signals = [{ coin: 'Market', signal: 'Hold', reason: result.substring(0, 200), confidence: 'Medium', target: '—' }];
+      }
+
+      res.json({ signals, memeCoins: trending });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
   // ===== CHAT =====
   router.post('/api/chat', async (req, res) => {
     const { messages } = req.body;
