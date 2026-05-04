@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
-  <title>AI Chat</title>
+  <title>AI Agent</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,6 +15,7 @@
       --bg-elevated: #222222;
       --bg-user: #2a2a5a;
       --bg-ai: #1e1e1e;
+      --bg-plan: rgba(99,102,241,0.06);
       --text-primary: #ececec;
       --text-secondary: #b0b0b0;
       --text-tertiary: #777;
@@ -23,6 +24,8 @@
       --accent-bright: #818cf8;
       --green: #10b981;
       --red: #ef4444;
+      --yellow: #eab308;
+      --blue: #38bdf8;
       --border: rgba(255,255,255,0.08);
       --border-subtle: rgba(255,255,255,0.04);
       --font: 'Inter', system-ui, -apple-system, sans-serif;
@@ -100,9 +103,16 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .history-item.active .history-title { color: var(--text-primary); }
-    .history-time {
+    .history-meta {
+      display: flex; align-items: center; gap: 6px;
       font-size: 10px; color: var(--text-muted); margin-top: 4px;
     }
+    .history-badge {
+      font-size: 9px; font-weight: 600; padding: 1px 5px;
+      border-radius: 3px; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .history-badge.chat { background: rgba(56,189,248,0.15); color: var(--blue); }
+    .history-badge.agent { background: rgba(99,102,241,0.15); color: var(--accent-bright); }
     .history-empty {
       padding: 24px 12px; text-align: center;
       font-size: 12px; color: var(--text-muted);
@@ -131,7 +141,7 @@
     }
     .icon-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
 
-    /* ===== MAIN CHAT ===== */
+    /* ===== MAIN ===== */
     .chat-main {
       flex: 1; display: flex; flex-direction: column;
       min-width: 0; position: relative;
@@ -203,6 +213,7 @@
       color: var(--text-primary);
       border-bottom-left-radius: 4px;
       border: 1px solid var(--border-subtle);
+      width: 100%;
     }
 
     .msg-label {
@@ -213,7 +224,7 @@
     .msg-label.user-label { color: var(--accent-bright); }
     .msg-label.ai-label { color: var(--green); }
 
-    /* Code blocks in responses */
+    /* Code blocks */
     .msg-bubble pre {
       background: var(--bg-deep);
       padding: 10px 12px;
@@ -232,12 +243,9 @@
       font-family: var(--mono);
       font-size: 12px;
     }
-    .msg-bubble pre code {
-      background: none;
-      padding: 0;
-    }
+    .msg-bubble pre code { background: none; padding: 0; }
 
-    /* Thinking indicator */
+    /* Thinking */
     .thinking-bubble {
       display: flex; align-items: center; gap: 10px;
       padding: 14px 16px;
@@ -250,6 +258,122 @@
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== AGENT RESULT ===== */
+    .agent-result { width: 100%; }
+    .agent-section {
+      margin-bottom: 16px;
+    }
+    .agent-section-title {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .agent-plan-list {
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .agent-plan-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 6px 10px;
+      background: var(--bg-plan);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .agent-plan-id {
+      width: 18px; height: 18px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .agent-plan-type {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.04);
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .agent-result-item {
+      padding: 10px 12px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    .agent-result-header {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 6px;
+    }
+    .agent-result-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+    }
+    .agent-result-dot.failed { background: var(--red); }
+    .agent-result-name {
+      font-size: 12px; font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .agent-result-output {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-tertiary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--mono);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .agent-result-output::-webkit-scrollbar { width: 4px; }
+    .agent-result-output::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    .agent-summary {
+      padding: 10px 12px;
+      background: rgba(16,185,129,0.06);
+      border: 1px solid rgba(16,185,129,0.15);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ===== MODE TOGGLE ===== */
+    .mode-toggle {
+      display: flex;
+      gap: 4px;
+      padding: 0 24px;
+      margin-bottom: 8px;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .mode-btn {
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mode-btn:hover { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
+    .mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
 
     /* ===== INPUT BAR ===== */
     .input-bar {
@@ -351,7 +475,7 @@
       font-size: 13px; color: var(--text-tertiary);
     }
     .modal-switch a { color: var(--accent-bright); cursor: pointer; text-decoration: none; }
-    .modal-switch a:hover { color: var(--accent-bright); text-decoration: underline; }
+    .modal-switch a:hover { text-decoration: underline; }
 
     /* ===== MOBILE ===== */
     .mobile-header {
@@ -398,6 +522,7 @@
       }
       .msg-container { padding: 0 12px; }
       .msg-bubble { font-size: 13px; padding: 10px 14px; }
+      .mode-toggle { padding: 0 12px; }
 
       .welcome h2 { font-size: 18px; }
       .welcome p { font-size: 13px; }
@@ -421,7 +546,7 @@
   <div class="mobile-header" id="mobileHeader">
     <div class="mobile-header-left">
       <button class="icon-btn" onclick="toggleSidebar()" style="font-size:18px;padding:4px 6px;">☰</button>
-      <span style="font-size:13px;font-weight:600;color:var(--text-primary);">AI Chat</span>
+      <span style="font-size:13px;font-weight:600;color:var(--text-primary);">AI Agent</span>
     </div>
     <div class="mobile-header-right" id="mobileAuthBtns">
       <button class="icon-btn" onclick="showModal('login')" title="Log in">🔑</button>
@@ -441,8 +566,8 @@
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-logo">🤖</div>
-      <span class="sidebar-brand">AI Chat</span>
+      <div class="sidebar-logo">🧠</div>
+      <span class="sidebar-brand">AI Agent</span>
     </div>
 
     <button class="new-chat-btn" onclick="newChat()">
@@ -473,7 +598,7 @@
   <div class="modal-overlay" id="authModal">
     <div class="modal">
       <h2 id="modalTitle">Sign up</h2>
-      <p class="sub" id="modalSub">Create an account to save your chat history.</p>
+      <p class="sub" id="modalSub">Create an account to save your history.</p>
       <div class="error-msg" id="authError"></div>
       <label>Username</label>
       <input type="text" id="authUser" placeholder="e.g. garok" autocomplete="username" />
@@ -489,14 +614,20 @@
     </div>
   </div>
 
-  <!-- MAIN CHAT -->
+  <!-- MAIN -->
   <main class="chat-main">
     <div class="chat-messages" id="chatMessages">
       <div class="welcome" id="welcomeScreen">
-        <div class="welcome-icon">🤖</div>
-        <h2>How can I help you?</h2>
-        <p>Ask me anything. I'm powered by MiMo AI.</p>
+        <div class="welcome-icon">🧠</div>
+        <h2>What do you want to build?</h2>
+        <p>Chat mode for quick questions. Agent mode to plan and execute complex goals.</p>
       </div>
+    </div>
+
+    <!-- MODE TOGGLE -->
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeChat" onclick="setMode('chat')">💬 Chat</button>
+      <button class="mode-btn" id="modeAgent" onclick="setMode('agent')">🧠 Agent</button>
     </div>
 
     <div class="input-bar">
@@ -518,7 +649,8 @@ let conversations = JSON.parse(localStorage.getItem('chat_conversations') || '[]
 let authMode = 'signup';
 let isRunning = false;
 let currentConvId = null;
-let currentMessages = []; // {role, content}
+let currentMessages = [];
+let mode = 'chat'; // 'chat' or 'agent'
 
 // ===== INIT =====
 init();
@@ -564,20 +696,20 @@ function showLoggedOut() {
 }
 
 // ===== AUTH =====
-function showModal(mode) {
-  authMode = mode;
+function showModal(m) {
+  authMode = m;
   document.getElementById('authModal').classList.add('active');
   document.getElementById('authError').classList.remove('active');
   document.getElementById('authUser').value = '';
   document.getElementById('authPass').value = '';
-  if (mode === 'signup') {
+  if (m === 'signup') {
     document.getElementById('modalTitle').textContent = 'Sign up';
-    document.getElementById('modalSub').textContent = 'Create an account to save your chat history.';
+    document.getElementById('modalSub').textContent = 'Create an account to save your history.';
     document.getElementById('authSubmit').textContent = 'Sign up';
     document.getElementById('modalSwitch').innerHTML = 'Already have an account? <a onclick="toggleAuthMode()">Log in</a>';
   } else {
     document.getElementById('modalTitle').textContent = 'Log in';
-    document.getElementById('modalSub').textContent = 'Welcome back! Enter your credentials.';
+    document.getElementById('modalSub').textContent = 'Welcome back!';
     document.getElementById('authSubmit').textContent = 'Log in';
     document.getElementById('modalSwitch').innerHTML = "Don't have an account? <a onclick='toggleAuthMode()'>Sign up</a>";
   }
@@ -615,6 +747,16 @@ function logout() {
   showLoggedOut(); newChat();
 }
 
+// ===== MODE =====
+function setMode(m) {
+  mode = m;
+  document.getElementById('modeChat').classList.toggle('active', m === 'chat');
+  document.getElementById('modeAgent').classList.toggle('active', m === 'agent');
+  const input = document.getElementById('msgInput');
+  input.placeholder = m === 'chat' ? 'Type a message...' : 'Describe your goal...';
+  input.focus();
+}
+
 // ===== SIDEBAR =====
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
@@ -629,10 +771,13 @@ function renderHistory() {
   }
   list.innerHTML = conversations.map(c => {
     const time = formatTime(c.createdAt);
+    const badge = c.mode === 'agent'
+      ? '<span class="history-badge agent">Agent</span>'
+      : '<span class="history-badge chat">Chat</span>';
     return `
     <div class="history-item ${c.id === currentConvId ? 'active' : ''}" onclick="loadConversation('${c.id}')">
       <div class="history-title">${escHtml(c.title)}</div>
-      <div class="history-time">${time}</div>
+      <div class="history-meta">${badge}<span>${time}</span></div>
     </div>`;
   }).join('');
 }
@@ -653,6 +798,8 @@ function loadConversation(id) {
   if (!conv) return;
   currentConvId = id;
   currentMessages = [...conv.messages];
+  mode = conv.mode || 'chat';
+  setMode(mode);
   renderMessages();
   renderHistory();
   document.getElementById('sidebar').classList.remove('open');
@@ -666,7 +813,8 @@ function renderMessages() {
   chat.querySelectorAll('.msg-row').forEach(el => el.remove());
   for (const msg of currentMessages) {
     if (msg.role === 'user') addUserBubble(msg.content);
-    else addAIBubble(msg.content);
+    else if (msg.agentResult) addAgentResultBubble(msg.agentResult);
+    else addAIBubble(renderContent(msg.content));
   }
 }
 
@@ -682,13 +830,11 @@ function newChat() {
   document.getElementById('msgInput').focus();
 }
 
-// ===== AUTO RESIZE =====
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
-// ===== KEY HANDLER =====
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -696,7 +842,7 @@ function handleKey(e) {
   }
 }
 
-// ===== MESSAGES =====
+// ===== BUBBLES =====
 function addUserBubble(text) {
   const chat = document.getElementById('chatMessages');
   const welcome = document.getElementById('welcomeScreen');
@@ -723,13 +869,75 @@ function addAIBubble(html) {
   scrollToBottom();
 }
 
-function addThinking() {
+function addAgentResultBubble(data) {
+  const chat = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row msg-ai';
+
+  // Build plan HTML
+  let planHtml = '';
+  if (data.plan && data.plan.length) {
+    planHtml = `<div class="agent-section">
+      <div class="agent-section-title">📋 Plan</div>
+      <div class="agent-plan-list">
+        ${data.plan.map(t => `
+          <div class="agent-plan-item">
+            <div class="agent-plan-id">${t.id}</div>
+            <span>${escHtml(t.task)}</span>
+            <span class="agent-plan-type">${escHtml(t.type || '')}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Build results HTML
+  let resultsHtml = '';
+  if (data.results && data.results.length) {
+    resultsHtml = `<div class="agent-section">
+      <div class="agent-section-title">⚡ Results</div>
+      ${data.results.map(r => `
+        <div class="agent-result-item">
+          <div class="agent-result-header">
+            <div class="agent-result-dot ${r.status === 'failed' ? 'failed' : ''}"></div>
+            <span class="agent-result-name">Task #${r.id}: ${escHtml(r.task || '')}</span>
+          </div>
+          <div class="agent-result-output">${renderContent(r.output || 'No output')}</div>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+
+  // Build summary HTML
+  let summaryHtml = '';
+  if (data.summary) {
+    summaryHtml = `<div class="agent-section">
+      <div class="agent-section-title">📝 Summary</div>
+      <div class="agent-summary">${escHtml(data.summary)}</div>
+    </div>`;
+  }
+
+  row.innerHTML = `<div class="msg-container">
+    <div class="msg-label ai-label">🧠 Agent</div>
+    <div class="msg-bubble">
+      <div class="agent-result">
+        ${planHtml}
+        ${resultsHtml}
+        ${summaryHtml}
+      </div>
+    </div>
+  </div>`;
+  chat.appendChild(row);
+  scrollToBottom();
+}
+
+function addThinking(label) {
   const chat = document.getElementById('chatMessages');
   const row = document.createElement('div');
   row.className = 'msg-row msg-ai';
   row.id = 'thinkingRow';
   row.innerHTML = `<div class="msg-container">
-    <div class="msg-label ai-label">🤖 Assistant</div>
+    <div class="msg-label ai-label">${label || '🤖 Assistant'}</div>
     <div class="msg-bubble thinking-bubble">
       <div class="spinner"></div>
       <span style="font-size:13px;color:var(--text-tertiary);">Thinking...</span>
@@ -745,18 +953,13 @@ function scrollToBottom() {
   requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
 }
 
-// ===== RENDER MARKDOWN-LITE =====
+// ===== RENDER =====
 function renderContent(text) {
   let html = escHtml(text);
-  // Code blocks
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
-  // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-  // Bold
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  // Italic
   html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  // Line breaks
   html = html.replace(/\n/g, '<br>');
   return html;
 }
@@ -772,12 +975,19 @@ async function send() {
   input.value = '';
   input.style.height = 'auto';
 
-  // Add user message
-  currentMessages.push({ role: 'user', content: text });
   addUserBubble(text);
+  currentMessages.push({ role: 'user', content: text });
 
-  // Show thinking
-  const thinkingRow = addThinking();
+  if (mode === 'agent') {
+    await runAgent(text);
+  } else {
+    await runChat(text);
+  }
+}
+
+// ===== CHAT MODE =====
+async function runChat(text) {
+  const thinkingRow = addThinking('🤖 Assistant');
 
   try {
     const res = await fetch('/chat', {
@@ -794,43 +1004,73 @@ async function send() {
     const data = await res.json();
     const content = data.content || 'No response.';
 
-    // Remove thinking, add response
     if (thinkingRow) thinkingRow.remove();
     currentMessages.push({ role: 'assistant', content });
     addAIBubble(renderContent(content));
-
-    // Save conversation
-    saveConversation(text);
+    saveConversation(text, 'chat');
 
   } catch (err) {
     if (thinkingRow) thinkingRow.remove();
-    const errHtml = `<span style="color:var(--red);">⚠ ${escHtml(err.message)}</span>`;
-    addAIBubble(errHtml);
+    addAIBubble(`<span style="color:var(--red);">⚠ ${escHtml(err.message)}</span>`);
   } finally {
-    isRunning = false;
-    document.getElementById('sendBtn').disabled = false;
-    input.focus();
+    done();
   }
 }
 
-// ===== SAVE CONVERSATION =====
-function saveConversation(firstMsg) {
+// ===== AGENT MODE =====
+async function runAgent(text) {
+  const thinkingRow = addThinking('🧠 Agent');
+
+  try {
+    const res = await fetch('/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal: text })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Server error (${res.status})`);
+    }
+
+    const data = await res.json();
+
+    if (thinkingRow) thinkingRow.remove();
+
+    // Store agent result as message
+    currentMessages.push({ role: 'assistant', content: data.summary || 'Done', agentResult: data });
+    addAgentResultBubble(data);
+    saveConversation(text, 'agent');
+
+  } catch (err) {
+    if (thinkingRow) thinkingRow.remove();
+    addAIBubble(`<span style="color:var(--red);">⚠ ${escHtml(err.message)}</span>`);
+  } finally {
+    done();
+  }
+}
+
+function done() {
+  isRunning = false;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('msgInput').focus();
+}
+
+// ===== SAVE =====
+function saveConversation(firstMsg, convMode) {
   if (!currentConvId) {
     currentConvId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    const conv = {
+    conversations.unshift({
       id: currentConvId,
       title: firstMsg.substring(0, 50),
+      mode: convMode,
       messages: currentMessages,
       createdAt: new Date().toISOString()
-    };
-    conversations.unshift(conv);
+    });
   } else {
     const conv = conversations.find(c => c.id === currentConvId);
-    if (conv) {
-      conv.messages = [...currentMessages];
-    }
+    if (conv) { conv.messages = [...currentMessages]; }
   }
-  // Keep max 50 conversations
   if (conversations.length > 50) conversations = conversations.slice(0, 50);
   localStorage.setItem('chat_conversations', JSON.stringify(conversations));
   renderHistory();
