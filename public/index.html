@@ -210,6 +210,7 @@ let currentDays = '7';
 let holdings = JSON.parse(localStorage.getItem('ct_holdings') || '[]');
 let signalHistory = JSON.parse(localStorage.getItem('ct_signals') || '[]');
 let chatMessages = [];
+let activeSignalTab = 'market';
 
 // ===== INIT =====
 loadCoins();
@@ -673,9 +674,13 @@ function renderSignals() {
       </div>
     </div>
   `;
+
+  // Restore active signal tab after re-render
+  switchSignalTab(activeSignalTab);
 }
 
 function switchSignalTab(tab) {
+  activeSignalTab = tab;
   document.getElementById('signal-tab-market').style.display = tab === 'market' ? 'block' : 'none';
   document.getElementById('signal-tab-meme').style.display = tab === 'meme' ? 'block' : 'none';
   document.getElementById('tab-market').style.background = tab === 'market' ? 'var(--ab)' : 'var(--bg3)';
