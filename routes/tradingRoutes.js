@@ -70,7 +70,7 @@ function createTradingRoutes(mimoClient) {
   router.get('/api/coins', async (req, res) => {
     try {
       if (coinsCache && Date.now() - coinsCacheTime < CACHE_TTL) return res.json(coinsCache);
-      const data = await fetchJSON('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h,24h,7d');
+      const data = await fetchJSON('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=true&price_change_percentage=1h,24h,7d');
       coinsCache = data;
       coinsCacheTime = Date.now();
       res.json(data);
@@ -85,6 +85,25 @@ function createTradingRoutes(mimoClient) {
       globalCache = data;
       globalCacheTime = Date.now();
       res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ===== COIN SEARCH =====
+  router.get('/api/search', async (req, res) => {
+    try {
+      const q = req.query.q || '';
+      if (!q) return res.json({ coins: [] });
+      const data = await fetchJSON(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`);
+      // Return top 50 results with basic info
+      const results = (data.coins || []).slice(0, 50).map(c => ({
+        id: c.id,
+        name: c.name,
+        symbol: c.symbol,
+        market_cap_rank: c.market_cap_rank,
+        thumb: c.thumb,
+        large: c.large
+      }));
+      res.json({ coins: results });
     } catch (err) { res.status(500).json({ error: err.message }); }
   });
 

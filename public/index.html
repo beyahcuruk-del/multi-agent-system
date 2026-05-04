@@ -336,18 +336,57 @@ function renderDashboard() {
 let sortCol = 'market_cap_rank';
 let sortDir = 1;
 let searchQuery = '';
+let searchTimeout = null;
+let searchResults = null; // null = use local coins, array = search results
 
 function renderMarkets() {
   const p = document.getElementById('page-markets');
-  let filtered = coins.filter(c => !searchQuery || c.name.toLowerCase().includes(searchQuery) || c.symbol.toLowerCase().includes(searchQuery));
-  filtered.sort((a,b) => {
+
+  p.innerHTML = `
+    <div class="search-bar"><input type="text" id="marketsSearch" placeholder="Search any coin (e.g. PEPE, DOGE, BTC)..." value="${esc(searchQuery)}" oninput="onMarketsSearch(this.value)"></div>
+    <div id="marketsTableWrap">${renderMarketsTable()}</div>
+  `;
+
+  // Restore focus to input if there was a search query
+  if (searchQuery) {
+    const inp = document.getElementById('marketsSearch');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }
+}
+
+function renderMarketsTable() {
+  let list;
+
+  if (searchResults) {
+    // Search results from API — merge with local coin data if available
+    const coinMap = {};
+    coins.forEach(c => coinMap[c.id] = c);
+    list = searchResults.map(s => {
+      const local = coinMap[s.id];
+      return local ? local : {
+        id: s.id, name: s.name, symbol: s.symbol,
+        market_cap_rank: s.market_cap_rank, image: s.thumb,
+        current_price: null, price_change_percentage_24h: null,
+        price_change_percentage_1h_in_currency: null,
+        price_change_percentage_7d_in_currency: null,
+        market_cap: null, total_volume: null
+      };
+    });
+  } else {
+    list = coins.filter(c => !searchQuery || c.name.toLowerCase().includes(searchQuery) || c.symbol.toLowerCase().includes(searchQuery));
+  }
+
+  list.sort((a,b) => {
     let va = a[sortCol], vb = b[sortCol];
     if (typeof va === 'string') return va.localeCompare(vb) * sortDir;
     return ((va||0) - (vb||0)) * sortDir;
   });
 
-  p.innerHTML = `
-    <div class="search-bar"><input type="text" placeholder="Search coins..." value="${esc(searchQuery)}" oninput="searchQuery=this.value.toLowerCase();renderMarkets()"></div>
+  if (list.length === 0) {
+    return '<div style="text-align:center;padding:40px;color:var(--t4)">No coins found.</div>';
+  }
+
+  return `
     <div class="table-wrap">
       <table>
         <thead><tr>
@@ -361,16 +400,16 @@ function renderMarkets() {
           <th onclick="toggleSort('total_volume')">Volume${sortCol==='total_volume'?(sortDir>0?' ▲':' ▼'):''}</th>
         </tr></thead>
         <tbody>
-        ${filtered.map(c => `
+        ${list.map(c => `
           <tr onclick="go('trade','${c.id}')">
-            <td>${c.market_cap_rank}</td>
+            <td>${c.market_cap_rank||'—'}</td>
             <td><div class="coin-cell"><img src="${c.image}" alt=""><div><div class="coin-cell-name">${c.name}</div><div class="coin-cell-sym">${c.symbol.toUpperCase()}</div></div></div></td>
-            <td>${fp(c.current_price)}</td>
+            <td>${c.current_price!=null?fp(c.current_price):'—'}</td>
             <td><span class="change-badge ${chgClass(c.price_change_percentage_1h_in_currency)}">${fpc(c.price_change_percentage_1h_in_currency)}</span></td>
             <td><span class="change-badge ${chgClass(c.price_change_percentage_24h)}">${fpc(c.price_change_percentage_24h)}</span></td>
             <td><span class="change-badge ${chgClass(c.price_change_percentage_7d_in_currency)}">${fpc(c.price_change_percentage_7d_in_currency)}</span></td>
-            <td>${fl(c.market_cap)}</td>
-            <td>${fl(c.total_volume)}</td>
+            <td>${c.market_cap!=null?fl(c.market_cap):'—'}</td>
+            <td>${c.total_volume!=null?fl(c.total_volume):'—'}</td>
           </tr>
         `).join('')}
         </tbody>
@@ -379,10 +418,44 @@ function renderMarkets() {
   `;
 }
 
+function updateMarketsTable() {
+  const wrap = document.getElementById('marketsTableWrap');
+  if (wrap) wrap.innerHTML = renderMarketsTable();
+}
+
+function onMarketsSearch(val) {
+  searchQuery = val.toLowerCase().trim();
+  // Only re-render table body, not the input
+  if (!searchQuery) {
+    searchResults = null;
+    updateMarketsTable();
+    return;
+  }
+  // Debounce API search
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch('/api/search?q=' + encodeURIComponent(searchQuery));
+      if (res.ok) {
+        const data = await res.json();
+        searchResults = (data.coins && data.coins.length > 0) ? data.coins : null;
+      }
+    } catch(e) {
+      searchResults = null;
+    }
+    // If no API results, fall back to local filter
+    if (!searchResults) updateMarketsTable();
+    else updateMarketsTable();
+  }, 400);
+  // Immediately show local results while API is loading
+  searchResults = null;
+  updateMarketsTable();
+}
+
 function toggleSort(col) {
   if (sortCol === col) sortDir *= -1;
   else { sortCol = col; sortDir = -1; }
-  renderMarkets();
+  updateMarketsTable();
 }
 
 // ===== TRADE =====
