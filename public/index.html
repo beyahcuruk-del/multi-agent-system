@@ -957,7 +957,12 @@ function viewSession(id) {
 
   // Show the conversation
   addUserMessage(session.goal);
-  addResultMessage(session);
+  const allOutputs = (session.steps || []).map(s => s.result).filter(Boolean).join('\n\n');
+  if (allOutputs) {
+    addCleanResponse(allOutputs);
+  } else {
+    addCleanResponse('_No output._');
+  }
 
   // Close mobile sidebar
   document.getElementById('sidebar').classList.remove('open');
@@ -1091,6 +1096,59 @@ function addResultMessage(data) {
 function scrollToBottom() {
   const chat = document.getElementById('chatMessages');
   requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
+}
+
+
+function addSimpleThinking() {
+  const chat = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row msg-ai';
+  row.id = 'thinkingMsg';
+  row.innerHTML = `<div class="msg-container">
+    <div style="width:100%">
+      <div class="msg-label ai-label">🧠 Agent</div>
+      <div class="msg-bubble" style="display:flex;align-items:center;gap:10px;padding:14px 16px;">
+        <div class="spinner"></div>
+        <span style="font-size:13px;color:var(--text-tertiary);">Thinking...</span>
+      </div>
+    </div>
+  </div>`;
+  chat.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+
+function addCleanResponse(text) {
+  const chat = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row msg-ai';
+  // Convert markdown-ish code blocks
+  let html = escHtml(text);
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre style="background:var(--bg-deep);padding:10px 12px;border-radius:6px;margin:8px 0;font-family:var(--mono);font-size:12px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;">$2</pre>');
+  html = html.replace(/`([^`]+)`/g, '<code style="background:var(--bg-deep);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:12px;">$1</code>');
+  html = html.replace(/\n/g, '<br>');
+  row.innerHTML = `<div class="msg-container">
+    <div style="width:100%">
+      <div class="msg-label ai-label">🧠 Agent</div>
+      <div class="msg-bubble">${html}</div>
+    </div>
+  </div>`;
+  chat.appendChild(row);
+  scrollToBottom();
+}
+
+function addErrorMessage(text) {
+  const chat = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row msg-ai';
+  row.innerHTML = `<div class="msg-container">
+    <div style="width:100%">
+      <div class="msg-label ai-label" style="color:var(--red);">⚠ Error</div>
+      <div class="msg-bubble" style="border-color:rgba(239,68,68,0.2);background:rgba(239,68,68,0.05);">${escHtml(text)}</div>
+    </div>
+  </div>`;
+  chat.appendChild(row);
+  scrollToBottom();
 }
 
 // ===== HISTORY =====
