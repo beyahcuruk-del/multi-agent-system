@@ -1157,6 +1157,46 @@ async function syncHistoryToServer() {
 }
 
 
+
+async function retryRun(goal) {
+  try {
+    const planRes = await fetch('/plan', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal }), keepalive: true
+    });
+    if (!planRes.ok) return null;
+    const { tasks } = await planRes.json();
+
+    const completedOutputs = [];
+    for (const task of tasks) {
+      const execRes = await fetch('/execute-task', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task, previousResults: completedOutputs, fast: true }),
+        keepalive: true
+      });
+      if (!execRes.ok) return null;
+      const d = await execRes.json();
+      if (d.success) completedOutputs.push({ taskId: task.id, output: d.output, artifacts: d.artifacts });
+    }
+
+    const allOutputs = completedOutputs.map(o => o.output).filter(Boolean).join('\n\n');
+    if (allOutputs) {
+      addCleanResponse(allOutputs);
+      return true;
+    }
+    return null;
+  } catch { return null; }
+}
+
+
+// Handle tab visibility — don't cancel requests
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && isRunning) {
+    // Tab came back while running — just wait, request is still going
+    console.log('Tab resumed, request still running...');
+  }
+});
+
 // ===== FILE UPLOAD =====
 let selectedFile = null;
 
@@ -1196,7 +1236,7 @@ async function run() {
   addUserMessage(goal + (selectedFile ? ' [📎 ' + selectedFile.name + ']' : ''));
   removeFile();
 
-  if (abortController) abortController.abort();
+  // Don't abort previous — let it finish naturally
   abortController = new AbortController();
 
   const thinkingRow = addThinkingMessage();
@@ -1209,7 +1249,7 @@ async function run() {
     addStep('planning', '🎯', 'Breaking goal into tasks...');
     const planRes = await fetch('/plan', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal }), signal: abortController.signal
+      body: JSON.stringify({ goal }), keepalive: true
     });
     if (!planRes.ok) throw new Error('Planning failed');
     const { tasks } = await planRes.json();
@@ -1227,7 +1267,7 @@ async function run() {
       const execRes = await fetch('/execute-task', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task, previousResults: completedOutputs, fast: true }),
-        signal: abortController.signal
+        keepalive: true
       });
 
       if (!execRes.ok) {
